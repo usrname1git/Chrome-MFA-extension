@@ -1,8 +1,10 @@
 # Install Autom8ed Vault into Chrome / Edge / Brave. Does not kill browsers.
+# Do not put ValidateSet on a [string[]] parameter named Browser: PowerShell
+# treats $browser and $Browser as the same variable, and assigning an array
+# to it validates as "System.String[]" instead of each name.
 [CmdletBinding()]
 param(
-    [ValidateSet("Chrome", "Edge", "Brave", "All")]
-    [string[]]$Browser = @("All"),
+    [string[]]$Browsers = @("All"),
     [switch]$Online
 )
 
@@ -89,11 +91,17 @@ function Get-DetectedBrowsers {
 
 function Select-Browsers($detected, $want) {
     if (-not $detected) { throw "No Chrome, Edge, or Brave install found." }
-    $names = @($want)
-    if ($names -contains "All") { return $detected }
+    $allowed = @("Chrome", "Edge", "Brave", "All")
+    $names = @($want | Where-Object { $_ })
+    foreach ($name in $names) {
+        if (-not ($allowed | Where-Object { $_ -eq $name })) {
+            throw "Unknown browser '$name'. Use All, Chrome, Edge, or Brave."
+        }
+    }
+    if ($names.Count -eq 0 -or ($names | Where-Object { $_ -eq "All" })) { return $detected }
     $picked = @($detected | Where-Object {
-        $name = $_.Name
-        @($names | Where-Object { $_ -eq $name }).Count -gt 0
+        $installed = $_.Name
+        @($names | Where-Object { $_ -eq $installed }).Count -gt 0
     })
     if (-not $picked) { throw "Requested browser(s) not installed: $($names -join ', ')" }
     return $picked
@@ -146,8 +154,8 @@ if (-not $source) {
 $manifest = Get-Content -LiteralPath (Join-Path $source "manifest.json") -Raw | ConvertFrom-Json
 $version = [string]$manifest.version
 $detected = @(Get-DetectedBrowsers)
-$want = @($Browser)
-if ($want -contains "All" -and -not $Online -and $Host.UI.RawUI -and $detected.Count -gt 1) {
+$want = @($Browsers)
+if (@($want | Where-Object { $_ -eq "All" }) -and -not $Online -and $Host.UI.RawUI -and $detected.Count -gt 1) {
     Write-Host "Found: $($detected.Name -join ', ')"
     $answer = Read-Host "Install to which? [A]ll, or comma names (Chrome,Edge,Brave)"
     if ($answer -and $answer -notmatch '^\s*A') {
@@ -156,8 +164,8 @@ if ($want -contains "All" -and -not $Online -and $Host.UI.RawUI -and $detected.C
 }
 $targets = Select-Browsers $detected $want
 $payload = Copy-Extension $source $version
-foreach ($browser in $targets) {
-    Register-Browser $browser $payload $version
+foreach ($target in $targets) {
+    Register-Browser $target $payload $version
 }
 
 Write-Host ""
