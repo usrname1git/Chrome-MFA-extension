@@ -18,19 +18,19 @@ Pin the vault icon from the puzzle piece.
 2. Click the **"⚙️ Manage Profiles"** link at the bottom.
 3. In the manager page, paste the following into the **Secret** field:
    ```text
-   otpauth://totp/Twitter:@2happyCSGO?secret=ABCDEFGHJKLMNOPQRSTUVWZ&issuer=Twitter
+   otpauth://totp/Twitter:@accountname?secret=ABCDEFGHJKLMNOPQRSTUVWZ&issuer=Twitter
    ```
-4. Notice how the **Label auto-fills** to `@2happyCSGO`.
+4. Notice how the **Label auto-fills** to `@youraccountname`.
 5. Click **"💾 Save Profile"**.
 6. The profile will appear in the list below.
 7. Close the manager and click the extension icon again.
-8. You should now see the **"@2happyCSGO"** button in your popup!
+8. You should now see the **"@youraccountname"** button in your popup!
 
 ---
 
 ## 3. Generate Your First Code
 
-1. Click the **"@2happyCSGO"** button in the popup.
+1. Click the **"@youraccountname"** button in the popup.
 2. The code is instantly **copied to your clipboard**.
 3. A status message will show: `✅ XXXXXX copied to clipboard!`
 4. Paste it wherever you need it.
