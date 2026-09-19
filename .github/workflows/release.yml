@@ -1,0 +1,32 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  pack:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Pack zips
+        shell: pwsh
+        run: |
+          ./Pack-Autom8edVault.ps1
+      - name: Publish GitHub release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Autom8ed Vault ${{ github.ref_name }}
+          generate_release_notes: true
+          files: |
+            dist/*-chrome-web-store.zip
+            dist/*-setup.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

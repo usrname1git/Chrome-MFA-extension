@@ -1,15 +1,14 @@
 # 🚀 Quick Start Guide - Autom8ed Vault v1.0
 
-## 1. Load Extension in Chrome
+## 1. Install
 
-1. Open Google Chrome.
-2. Navigate to: `chrome://extensions/`
-3. Enable **Developer mode** (toggle in the top-right corner).
-4. Click the **"Load unpacked"** button.
-5. Browse to and select the extension folder.
-6. Click **"Select Folder"**.
+**Windows (from a GitHub release):** download `autom8ed-vault-*-setup.zip`, extract, double-click `Install.cmd`. Pick Chrome / Edge / Brave. If the browser is already open, close it yourself and open it again — the installer will not kill it.
 
-✅ *The extension should now appear in your toolbar!* (Pin it by clicking the puzzle piece icon and pinning the vault icon).
+**Chrome Web Store upload:** use `autom8ed-vault-*-chrome-web-store.zip` from the same release (or run `.\Pack-Autom8edVault.ps1`).
+
+**Load unpacked:** `chrome://extensions/` → Developer mode → Load unpacked → this folder.
+
+Pin the vault icon from the puzzle piece.
 
 ---
 

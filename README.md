@@ -59,17 +59,39 @@ Autom8ed-Vault/
 
 ## 🚀 Installation
 
-### Option 1: Load Unpacked (Development)
-1. Open Chrome and navigate to `chrome://extensions/`
-2. Enable **Developer mode** (top right toggle)
-3. Click **Load unpacked**
-4. Select the extension folder
-5. The extension icon will appear in your toolbar
+Chrome will not 1-click-install a `.crx` downloaded from GitHub (it only allows
+that from the Chrome Web Store). The GitHub path is a setup zip: extract and
+double-click `Install.cmd`. Pick Chrome / Edge / Brave. The installer does
+**not** kill a running browser — if one is open, close it yourself and start it
+again so the vault appears.
 
-### Option 2: Pack Extension
-1. In `chrome://extensions/`, click **Pack extension**
-2. Select the extension folder
-3. Install the generated `.crx` file
+### Option 1: GitHub release (1-click on Windows)
+
+1. Open the latest release: https://github.com/usrname1git/Chrome-MFA-extension/releases/latest
+2. Download `autom8ed-vault-*-setup.zip`
+3. Extract it and double-click **Install.cmd**
+4. Choose browsers, or run:
+   ```powershell
+   .\Install-Autom8edVault.ps1 -Browser Chrome,Edge
+   ```
+5. From a machine with no zip yet:
+   ```powershell
+   irm https://raw.githubusercontent.com/usrname1git/Chrome-MFA-extension/main/Install-Autom8edVault.ps1 | iex
+   ```
+   That script downloads the latest setup zip when it has no local `manifest.json`.
+
+### Option 2: Chrome Web Store upload
+
+1. Run `.\Pack-Autom8edVault.ps1` (or use the `*-chrome-web-store.zip` on the GitHub release)
+2. Developer Dashboard → **Upload new item** → that zip
+3. Privacy policy URL: this repo's `PRIVACY_POLICY.md` on GitHub
+4. Do not upload the setup zip or `.crx` to the Store — only `*-chrome-web-store.zip`
+
+### Option 3: Load unpacked (development)
+
+1. Open `chrome://extensions/`
+2. Enable **Developer mode**
+3. **Load unpacked** → this folder
 
 ---
 
