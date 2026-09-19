@@ -126,6 +126,54 @@ function Copy-Extension([string]$Source, [string]$Version) {
     return [pscustomobject]@{ Dir = $dest; Crx = $crxDest }
 }
 
+function Test-DebugPort([int]$Port) {
+    try {
+        $client = New-Object System.Net.Sockets.TcpClient
+        $ok = $client.ConnectAsync("127.0.0.1", $Port).Wait(250)
+        $client.Close()
+        return [bool]$ok
+    } catch {
+        return $false
+    }
+}
+
+function Invoke-LoadUnpacked([string]$ExtensionDir, [int]$Port) {
+    $version = Invoke-RestMethod -Uri "http://127.0.0.1:$Port/json/version" -Headers @{ Host = "127.0.0.1" }
+    $wsUrl = [string]$version.webSocketDebuggerUrl
+    if (-not $wsUrl) { throw "Chrome DevTools websocket is missing." }
+    $ws = [System.Net.WebSockets.ClientWebSocket]::new()
+    $ws.Options.SetRequestHeader("Origin", "http://127.0.0.1")
+    $token = [System.Threading.CancellationToken]::None
+    $ws.ConnectAsync([Uri]$wsUrl, $token).GetAwaiter().GetResult()
+    try {
+        $body = @{
+            id = 1
+            method = "Extensions.loadUnpacked"
+            params = @{ path = $ExtensionDir }
+        } | ConvertTo-Json -Compress -Depth 5
+        $bytes = [Text.Encoding]::UTF8.GetBytes($body)
+        $ws.SendAsync([ArraySegment[byte]]::new($bytes), [System.Net.WebSockets.WebSocketMessageType]::Text, $true, $token).GetAwaiter().GetResult()
+        $buffer = New-Object byte[] 65536
+        $received = $ws.ReceiveAsync([ArraySegment[byte]]::new($buffer), $token).GetAwaiter().GetResult()
+        $text = [Text.Encoding]::UTF8.GetString($buffer, 0, $received.Count)
+        if ($text -match '"error"') { throw "DevTools loadUnpacked failed: $text" }
+        return $text
+    } finally {
+        $ws.Dispose()
+    }
+}
+
+function Show-ManualLoad([string]$Name, [string]$Exe, [string]$Dir) {
+    Write-Host ""
+    Write-Host ("{0} cannot be force-loaded while it is already running (Chrome 137+ dropped --load-extension)." -f $Name)
+    Write-Host "Not killing the browser. Close it from the menu (every window), then run this installer again."
+    Write-Host "Or: chrome://extensions -> Developer mode ON -> Load unpacked -> this folder:"
+    Write-Host "  $Dir"
+    Set-Clipboard -Value $Dir -ErrorAction SilentlyContinue
+    Start-Process -FilePath $Exe -ArgumentList @("chrome://extensions") -ErrorAction SilentlyContinue
+    Start-Process -FilePath "explorer.exe" -ArgumentList @($Dir) -ErrorAction SilentlyContinue
+}
+
 function Register-Browser($browser, $payload, [string]$Version) {
     $idKey = Join-Path $browser.ExtensionsKey "autom8edvault"
     New-Item -Path $idKey -Force | Out-Null
@@ -135,14 +183,44 @@ function Register-Browser($browser, $payload, [string]$Version) {
         New-ItemProperty -Path $idKey -Name "path" -Value $payload.Dir -PropertyType String -Force | Out-Null
     }
     New-ItemProperty -Path $idKey -Name "version" -Value $Version -PropertyType String -Force | Out-Null
+
+    $debugPort = 19222
     $running = Get-Process -Name $browser.Process -ErrorAction SilentlyContinue
     if ($running) {
-        Write-Host ("{0} is already open. The vault is registered; it shows up after you close that browser and open it again. Not killing it." -f $browser.Name)
+        Show-ManualLoad $browser.Name $browser.Exe $payload.Dir
         return
     }
-    $extArg = "--load-extension=`"$($payload.Dir)`""
-    Start-Process -FilePath $browser.Exe -ArgumentList @($extArg)
-    Write-Host ("Started {0} with the vault loaded." -f $browser.Name)
+
+    $args = @(
+        "--enable-unsafe-extension-debugging",
+        "--remote-debugging-port=$debugPort",
+        "--remote-allow-origins=http://127.0.0.1:$debugPort",
+        "chrome://extensions"
+    )
+    if ($browser.Name -eq "Brave") {
+        $args = @("--load-extension=$($payload.Dir)") + $args
+    }
+    Start-Process -FilePath $browser.Exe -ArgumentList $args | Out-Null
+    $deadline = (Get-Date).AddSeconds(12)
+    while (-not (Test-DebugPort $debugPort) -and (Get-Date) -lt $deadline) {
+        Start-Sleep -Milliseconds 250
+    }
+    if (-not (Test-DebugPort $debugPort)) {
+        Write-Host ("{0} opened but DevTools did not bind (likely an already-running instance ate the flags)." -f $browser.Name)
+        Show-ManualLoad $browser.Name $browser.Exe $payload.Dir
+        return
+    }
+    try {
+        $result = Invoke-LoadUnpacked $payload.Dir $debugPort
+        Write-Host ("Loaded Autom8ed Vault into {0}." -f $browser.Name)
+        if ($result -match '"id"\s*:\s*"([a-p]{32})"') {
+            Write-Host ("Extension id {0}" -f $Matches[1])
+        }
+        Write-Host "Pin it from the puzzle piece. Keep Developer mode on or Chrome will disable unpacked extensions."
+    } catch {
+        Write-Host ("DevTools load failed: {0}" -f $_.Exception.Message)
+        Show-ManualLoad $browser.Name $browser.Exe $payload.Dir
+    }
 }
 
 $source = if ($Online) { Install-FromGitHub } else { Get-SourceExtension }
@@ -169,6 +247,5 @@ foreach ($target in $targets) {
 }
 
 Write-Host ""
-Write-Host "Installed to $installRoot"
-Write-Host "Pin the puzzle-piece icon once it appears."
-Write-Host "Chrome Web Store upload zip is built by Pack-Autom8edVault.ps1 (dist\*-chrome-web-store.zip)."
+Write-Host "Files are at $installRoot"
+Write-Host "Chrome 153+ ignores --load-extension. This installer uses DevTools loadUnpacked when it can start the browser itself."
