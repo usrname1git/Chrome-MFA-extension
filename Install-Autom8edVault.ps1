@@ -87,13 +87,16 @@ function Get-DetectedBrowsers {
     }
 }
 
-function Select-Browsers($detected) {
+function Select-Browsers($detected, $want) {
     if (-not $detected) { throw "No Chrome, Edge, or Brave install found." }
-    $want = @($Browser)
-    if ($want -contains "All") { return $detected }
-    $picked = $detected | Where-Object { $want -contains $_.Name }
-    if (-not $picked) { throw "Requested browser(s) not installed: $($want -join ', ')" }
-    return @($picked)
+    $names = @($want)
+    if ($names -contains "All") { return $detected }
+    $picked = @($detected | Where-Object {
+        $name = $_.Name
+        @($names | Where-Object { $_ -eq $name }).Count -gt 0
+    })
+    if (-not $picked) { throw "Requested browser(s) not installed: $($names -join ', ')" }
+    return $picked
 }
 
 function Copy-Extension([string]$Source, [string]$Version) {
@@ -143,14 +146,15 @@ if (-not $source) {
 $manifest = Get-Content -LiteralPath (Join-Path $source "manifest.json") -Raw | ConvertFrom-Json
 $version = [string]$manifest.version
 $detected = @(Get-DetectedBrowsers)
-if ($Browser -contains "All" -and -not $Online -and $Host.UI.RawUI -and $detected.Count -gt 1) {
+$want = @($Browser)
+if ($want -contains "All" -and -not $Online -and $Host.UI.RawUI -and $detected.Count -gt 1) {
     Write-Host "Found: $($detected.Name -join ', ')"
     $answer = Read-Host "Install to which? [A]ll, or comma names (Chrome,Edge,Brave)"
     if ($answer -and $answer -notmatch '^\s*A') {
-        $Browser = @($answer -split '[, ]+' | Where-Object { $_ })
+        $want = @($answer -split '[, ]+' | Where-Object { $_ })
     }
 }
-$targets = Select-Browsers $detected
+$targets = Select-Browsers $detected $want
 $payload = Copy-Extension $source $version
 foreach ($browser in $targets) {
     Register-Browser $browser $payload $version
