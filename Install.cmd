@@ -8,4 +8,8 @@ if %ERRORLEVEL%==0 (
 ) else (
   powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0Install-Autom8edVault.ps1" %*
 )
-exit /b %ERRORLEVEL%
+set "INSTALL_EXIT=%ERRORLEVEL%"
+echo.
+if not "%INSTALL_EXIT%"=="0" echo Setup did not complete. Review the error above.
+pause
+exit /b %INSTALL_EXIT%

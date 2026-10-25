@@ -62,17 +62,40 @@ Autom8ed-Vault/
 Chrome will not 1-click-install a `.crx` downloaded from GitHub (it only allows
 that from the Chrome Web Store). The GitHub path is a setup zip: extract and
 double-click `Install.cmd`. Pick Chrome / Edge / Brave. The installer does
-**not** kill a running browser — if one is open, close it yourself and start it
-again so the vault appears.
+**not** kill or restart running browsers. You do not need to disconnect
+DevTools. A bundled native Windows helper uses the browser's normal extension
+controls, without debugging ports, unsafe debugging flags or registry
+installation tricks.
 
-### Option 1: GitHub release (1-click on Windows)
+If Developer mode is off, setup identifies the browser and asks you to click
+**Enable Developer mode and install**. Only after that confirmation does it
+enable the switch and continue automatically. You can instead enable the
+switch yourself; setup detects that too. Browsers with Developer mode already
+enabled need no additional confirmation.
+
+Setup loads the prepared extension from
+`%LOCALAPPDATA%\Autom8edVault\1.0.0` and confirms its name, version, source
+path and enabled state before reporting success. It opens a new setup window
+in the browser's normal profile; choose a profile if the browser asks. Existing
+tabs and vault data are not copied or removed. The historical directory name
+`1.0.0` is deliberately retained for newer releases, including extension
+version **1.0.1**: Chromium derives unpacked extension IDs from that path.
+This update does not migrate extension identities or vault data.
+
+Keep the interactive Windows desktop and setup window available until setup
+finishes. Cancel is available throughout; waiting is bounded to ten minutes
+per browser. Policy restrictions, inaccessible controls and failed installs
+produce an error, not an installed message. Setup does not override enterprise
+policy. `Install.cmd` keeps its final result visible until you press a key.
+
+### Option 1: GitHub release (Windows setup)
 
 1. Open the latest release: https://github.com/usrname1git/Chrome-MFA-extension/releases/latest
 2. Download `autom8ed-vault-*-setup.zip`
-3. Extract it and double-click **Install.cmd**
+3. Extract it: all setup files stay inside **autom8ed-mfa**. Open that folder and double-click **Install.cmd**.
 4. Choose browsers, or run:
    ```powershell
-   .\Install-Autom8edVault.ps1 -Browser Chrome,Edge
+   .\Install-Autom8edVault.ps1 -Browsers Chrome,Edge
    ```
 5. From a machine with no zip yet:
    ```powershell
@@ -82,7 +105,7 @@ again so the vault appears.
 
 ### Option 2: Chrome Web Store upload
 
-1. Run `.\Pack-Autom8edVault.ps1` (or use the `*-chrome-web-store.zip` on the GitHub release)
+1. Run `.\Build-Installer.ps1`, then `.\Pack-Autom8edVault.ps1` (or use the `*-chrome-web-store.zip` on the GitHub release)
 2. Developer Dashboard → **Upload new item** → that zip
 3. Privacy policy URL: this repo's `PRIVACY_POLICY.md` on GitHub
 4. Do not upload the setup zip or `.crx` to the Store — only `*-chrome-web-store.zip`
@@ -92,6 +115,25 @@ again so the vault appears.
 1. Open `chrome://extensions/`
 2. Enable **Developer mode**
 3. **Load unpacked** → this folder
+
+### Building and checking the Windows setup
+
+Building from source requires Visual Studio x64 C++ Build Tools. Release setup
+ZIPs include the statically linked native helper; users do not need a compiler
+or additional packages.
+
+```powershell
+.\Build-Installer.ps1
+.\Test-Installer.ps1
+.\Test-PackageLayout.ps1
+```
+
+`.\Test-Installer.ps1 -LiveBrowsers` additionally exercises the installed
+browsers on an interactive desktop using a permission-free fixture and the
+actual MFA extension in isolated browser profiles. It checks Developer-mode
+consent, repeat installation, onboarding tabs, cancellation and rejected
+manifests. It does not inspect personal browser data or install test extensions
+into normal profiles.
 
 ---
 

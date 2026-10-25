@@ -1,25 +1,54 @@
 name: Release
 
 on:
+  pull_request:
+    branches:
+      - main
   push:
     tags:
       - "v*"
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   pack:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Build native Windows installer
+        shell: pwsh
+        run: .\Build-Installer.ps1
+      - name: Check installer behavior
+        shell: pwsh
+        run: .\Test-Installer.ps1
+      - name: Check package layouts
+        shell: pwsh
+        run: .\Test-PackageLayout.ps1
       - name: Pack zips
         shell: pwsh
         run: |
-          ./Pack-Autom8edVault.ps1
-      - name: Publish GitHub release
+          .\Pack-Autom8edVault.ps1
+      - uses: actions/upload-artifact@v4
         if: startsWith(github.ref, 'refs/tags/')
+        with:
+          name: release-zips
+          path: dist/*.zip
+          if-no-files-found: error
+
+  publish:
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: pack
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-zips
+          path: dist
+      - name: Publish GitHub release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref_name }}

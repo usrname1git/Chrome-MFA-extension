@@ -1,5 +1,4 @@
-# Build Chrome Web Store zip + GitHub setup zip. Does not launch or kill browsers
-# except an optional headless pack-extension pass.
+# Build Chrome Web Store zip + GitHub setup zip without launching browsers.
 [CmdletBinding()]
 param(
     [string]$RepoRoot = ""
@@ -31,11 +30,16 @@ foreach ($name in $files) {
     $path = Join-Path $RepoRoot $name
     if (-not (Test-Path -LiteralPath $path)) { throw "Missing extension file: $name" }
 }
+$helper = Join-Path $RepoRoot "build\installer\autom8ed-installer.exe"
+if (-not (Test-Path -LiteralPath $helper -PathType Leaf)) {
+    throw "Missing native installer. Run .\Build-Installer.ps1 before packaging."
+}
 
 $dist = Join-Path $RepoRoot "dist"
 $webstore = Join-Path $dist "webstore"
 $setup = Join-Path $dist "setup"
-$setupExt = Join-Path $setup "extension"
+$setupRoot = Join-Path $setup "autom8ed-mfa"
+$setupExt = Join-Path $setupRoot "extension"
 Remove-Item -LiteralPath $dist -Recurse -Force -ErrorAction SilentlyContinue
 New-Item -ItemType Directory -Path $webstore, $setupExt -Force | Out-Null
 
@@ -43,8 +47,9 @@ foreach ($name in $files) {
     Copy-Item -LiteralPath (Join-Path $RepoRoot $name) -Destination (Join-Path $webstore $name)
     Copy-Item -LiteralPath (Join-Path $RepoRoot $name) -Destination (Join-Path $setupExt $name)
 }
-Copy-Item -LiteralPath (Join-Path $RepoRoot "Install-Autom8edVault.ps1") -Destination (Join-Path $setup "Install-Autom8edVault.ps1")
-Copy-Item -LiteralPath (Join-Path $RepoRoot "Install.cmd") -Destination (Join-Path $setup "Install.cmd")
+Copy-Item -LiteralPath (Join-Path $RepoRoot "Install-Autom8edVault.ps1") -Destination (Join-Path $setupRoot "Install-Autom8edVault.ps1")
+Copy-Item -LiteralPath (Join-Path $RepoRoot "Install.cmd") -Destination (Join-Path $setupRoot "Install.cmd")
+Copy-Item -LiteralPath $helper -Destination (Join-Path $setupRoot "autom8ed-installer.exe")
 
 Add-Type -AssemblyName System.IO.Compression.FileSystem
 function Write-Zip([string]$SourceDir, [string]$ZipPath) {

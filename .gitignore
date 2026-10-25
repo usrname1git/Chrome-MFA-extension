@@ -1,4 +1,5 @@
 dist/
+build/
 *.pem
 *.crx
 .DS_Store

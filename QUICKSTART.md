@@ -2,9 +2,19 @@
 
 ## 1. Install
 
-**Windows (from a GitHub release):** download `autom8ed-vault-*-setup.zip`, extract, double-click `Install.cmd`. Pick Chrome / Edge / Brave. If the browser is already open, close it yourself and open it again — the installer will not kill it.
+**Windows (from a GitHub release):** download `autom8ed-vault-*-setup.zip`, extract, open the **autom8ed-mfa** folder, and double-click `Install.cmd`. Pick Chrome / Edge / Brave. The installer will not kill a running browser.
 
-**Chrome Web Store upload:** use `autom8ed-vault-*-chrome-web-store.zip` from the same release (or run `.\Pack-Autom8edVault.ps1`).
+If a selected browser has Developer mode off, click **Enable Developer mode
+and install** in the setup message. Setup enables it only after that
+confirmation, loads the extension automatically, and checks that the correct
+version and source path are installed and enabled. If you enable Developer
+mode yourself, setup notices and continues too.
+
+Keep the setup window open until it reports the result. Running browsers and
+DevTools do not need to be closed. Policy or permission blocks are reported
+as failures, not success.
+
+**Chrome Web Store upload:** use `autom8ed-vault-*-chrome-web-store.zip` from the same release (or run `.\Build-Installer.ps1`, then `.\Pack-Autom8edVault.ps1`).
 
 **Load unpacked:** `chrome://extensions/` → Developer mode → Load unpacked → this folder.
 

@@ -1,5 +1,16 @@
 # 🎉 Autom8ed Vault - Release Notes
 
+## VERSION 1.0.1 - WINDOWS INSTALLER REPAIR
+**Date**: October 25, 2026
+
+- Native browser setup with explicit confirmation before enabling Developer mode.
+- Installation verifies the extension name, version, source directory and enabled state.
+- Running browsers and DevTools no longer trigger a manual-only fallback.
+- Setup waits for its helper, not for the browser to exit.
+- The setup ZIP extracts into one `autom8ed-mfa` directory.
+- The original `Autom8edVault\1.0.0` install directory remains stable across updates to preserve path-derived extension IDs.
+- Chrome and Brave have isolated live coverage; Edge remains an unverified Chromium target.
+
 ## 🌟 VERSION 1.0.0 - STABLE RELEASE
 **Date**: May 6, 2026  
 **Status**: ✅ PRODUCTION READY  
